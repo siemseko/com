@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Tesseract from 'tesseract.js';
+import Image from 'next/image';
 import { CloudArrowUpIcon } from '@heroicons/react/24/solid';
-import { Copy } from 'lucide-react';
+import { Copy, History, FileText, CheckCircle2, Loader2 } from 'lucide-react';
 import NotePage from './Note';
 
 export default function ImageToText() {
@@ -12,58 +13,62 @@ export default function ImageToText() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [history, setHistory] = useState<string[]>([]);
-  const [copySuccess, setCopySuccess] = useState('');
+  const [copySuccess, setCopySuccess] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   // Load saved history on mount
   useEffect(() => {
     const savedHistory = localStorage.getItem('ocrHistory');
-    if (savedHistory) {
-      setHistory(JSON.parse(savedHistory));
-    }
+    if (savedHistory) setHistory(JSON.parse(savedHistory));
   }, []);
 
-  // Auto-convert when image changes
+  // Cleanup Object URL to prevent memory leaks
   useEffect(() => {
-    if (image) {
-      handleConvert();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [image]);
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
 
-  const handleConvert = async () => {
-    if (!image) return;
+  const handleConvert = useCallback(async (imgFile: File) => {
     setLoading(true);
     setText('');
     setError('');
 
     try {
-      const result = await Tesseract.recognize(image, 'khm+eng', {
+      // Supporting Khmer and English
+      const result = await Tesseract.recognize(imgFile, 'khm+eng', {
         logger: (m) => console.log(m),
       });
       const extracted = result.data.text.trim();
-      setText(extracted);
-
-      const updatedHistory = [extracted, ...history].slice(0, 10);
-      setHistory(updatedHistory);
-      localStorage.setItem('ocrHistory', JSON.stringify(updatedHistory));
-    } catch (err) {
-      console.error(err);
-      setError('Failed to extract text. Please try another image.');
+      
+      if (!extracted) {
+        setError('No text detected in this image.');
+      } else {
+        setText(extracted);
+        const updatedHistory = [extracted, ...history.filter(h => h !== extracted)].slice(0, 10);
+        setHistory(updatedHistory);
+        localStorage.setItem('ocrHistory', JSON.stringify(updatedHistory));
+      }
+    } catch { 
+      setError('OCR Engine error. Please check your connection or try again.');
+    } finally {
+      setLoading(false);
     }
+  }, [history]);
 
-    setLoading(false);
-  };
+  useEffect(() => {
+    if (image) {
+      const url = URL.createObjectURL(image);
+      setPreviewUrl(url);
+      handleConvert(image);
+    }
+  }, [image, handleConvert]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setImage(file);
-      setText('');
-      setError('');
-    }
+    if (file) setImage(file);
   };
 
-  // Ctrl+V paste support
   useEffect(() => {
     const handlePaste = (e: ClipboardEvent) => {
       const items = e.clipboardData?.items;
@@ -71,16 +76,11 @@ export default function ImageToText() {
         for (const item of items) {
           if (item.type.startsWith('image/')) {
             const file = item.getAsFile();
-            if (file) {
-              setImage(file);
-              setText('');
-              setError('');
-            }
+            if (file) setImage(file);
           }
         }
       }
     };
-
     window.addEventListener('paste', handlePaste);
     return () => window.removeEventListener('paste', handlePaste);
   }, []);
@@ -88,100 +88,129 @@ export default function ImageToText() {
   const handleCopyText = () => {
     if (text) {
       navigator.clipboard.writeText(text).then(() => {
-        setCopySuccess('Copied!');
-        setTimeout(() => setCopySuccess(''), 2000);
-      }).catch((err) => {
-        console.error('Failed to copy text: ', err);
+        setCopySuccess(true);
+        setTimeout(() => setCopySuccess(false), 2000);
       });
     }
   };
 
   return (
-    <div className="container mx-auto px-4">
-      <div className="flex flex-col lg:flex-row gap-4">
+    <div className="max-w-7xl mx-auto animate-fadeIn transition-colors duration-300">
+      <div className="flex flex-col lg:flex-row gap-6">
+        
+        {/* Left Column: Extraction Area */}
+        <div className="lg:w-3/4 space-y-6">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden transition-colors">
+            <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center">
+              <h2 className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                <FileText className="text-blue-500" size={20} />
+                Extracted Text
+              </h2>
+              <button
+                onClick={handleCopyText}
+                disabled={!text || loading}
+                className={`flex items-center gap-2 px-5 py-2 rounded-full font-semibold transition-all duration-200 ${
+                  text && !loading 
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-100 dark:shadow-none hover:bg-blue-700 active:scale-95' 
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed'
+                }`}
+              >
+                {copySuccess ? <CheckCircle2 size={16} /> : <Copy size={16} />}
+                <span className="text-sm">{copySuccess ? 'Copied' : 'Copy Text'}</span>
+              </button>
+            </div>
 
-         <div className="lg:w-3/4">
-          <div className="bg-[#e2e3e4] rounded-[18px] p-4 mb-4">
-            {/* OCR result */}
-            <div className="flex-1">
-              <div className="flex justify-between items-center mb-2">
-                <h2 className="text-[#1A1C1E] mb-4">Extracted Text</h2>
-                <button
-                  onClick={handleCopyText}
-                  disabled={!text || loading}
-                  className={`flex items-center gap-1 px-3 py-2 rounded-[32px] text-white  ${text && !loading ? ' bg-[#076eff] hover:bg-[#1a73e8] cursor-pointer' : 'bg-[#076eff8e] cursor-not-allowed'} transition-colors`}
-                >
-                  <Copy className="h-4 w-4" />
-                  <span className='text-[14px]'>{copySuccess || 'Copy'}</span>
-                </button>
-              </div>
-
+            <div className="p-6 relative">
+              {loading && (
+                <div className="absolute inset-0 bg-white/60 dark:bg-slate-900/70 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center transition-colors">
+                  <Loader2 className="w-10 h-10 text-blue-500 animate-spin mb-3" />
+                  <p className="text-sm font-bold text-slate-600 dark:text-slate-200">Reading Image...</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500">Processing Khmer & English characters</p>
+                </div>
+              )}
+              
               <textarea
-                value={loading ? 'Extracting text...' : text}
+                value={text}
+                placeholder="The text will appear here after you upload or paste an image..."
                 onChange={(e) => setText(e.target.value)}
-                className="w-full h-64 p-3 outline-none bg-[#e2e3e4]  rounded-lg text-[#1A1C1E] border-gray-300  border border-[#efefef] resize-none"
-                readOnly={loading}
+                className="w-full h-80 p-5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 text-slate-700 dark:text-slate-300 leading-relaxed focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none resize-none custom-scroll font-medium placeholder:text-slate-400 dark:placeholder:text-slate-600"
               />
 
-              {error && <div className="text-red-500 mt-2 text-sm">{error}</div>}
+              {error && (
+                <div className="mt-4 p-4 bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-900/30 rounded-xl text-rose-600 dark:text-rose-400 text-sm font-medium">
+                  {error}
+                </div>
+              )}
             </div>
           </div>
-          <NotePage/>
+          
+          <NotePage />
         </div>
-        <div className="lg:w-1/4 space-y-4">
-          <div className="bg-[#e2e3e4] rounded-[18px] p-4">
-            <h2 className="text-[#1A1C1E] mb-4">Image Preview</h2>
-            {/* Upload section */}
-            <div className="mb-4">
-              <label className="flex flex-col items-center justify-center w-full h-32 border-gray-300 border border-[#efefef] rounded-[18px] cursor-pointer hover:bg-[#e2e3e4]  transition-colors">
-                <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                  <CloudArrowUpIcon className="w-8 h-8 text-gray-400 mb-2" />
-                  <p className="text-sm text-gray-500">
-                    <span className="font-semibold">Click to upload</span> or drag and drop
-                  </p>
-                  <p className="text-xs text-gray-500  mt-1">Or paste (Ctrl+V) an image</p>
-                </div>
-                <input
-                  type="file"
-                  accept="image/*"
-                  hidden
-                  onChange={handleFileChange}
-                />
-              </label>
-            </div>
 
-            {/* Image preview */}
-            {image && (
-              <div className="mt-4">
-                <img
-                  src={URL.createObjectURL(image)}
-                  alt="Uploaded preview"
-                  className="max-h-96 w-full object-contain mx-auto rounded-lg border border-gray-200"
+        {/* Right Column: Controls & History */}
+        <div className="lg:w-1/4 space-y-6">
+          {/* Upload Card */}
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 transition-colors">
+            <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
+              Source Image
+            </h3>
+            
+            <label className="group flex flex-col items-center justify-center w-full aspect-video border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl cursor-pointer hover:bg-blue-50/50 dark:hover:bg-blue-900/20 hover:border-blue-300 dark:hover:border-blue-600 transition-all mb-4 overflow-hidden relative">
+              {previewUrl ? (
+                <Image
+                  src={previewUrl}
+                  alt="Upload preview"
+                  fill
+                  unoptimized
+                  className="absolute inset-0 w-full h-full object-cover transition-opacity group-hover:opacity-30"
                 />
+              ) : null}
+              
+              <div className={`flex flex-col items-center p-4 text-center z-10 ${image ? 'opacity-0 group-hover:opacity-100' : ''}`}>
+                <CloudArrowUpIcon className="w-10 h-10 text-slate-300 dark:text-slate-600 mb-2 group-hover:text-blue-500 transition-colors" />
+                <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight">Upload Image</p>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Drag/Drop or Paste</p>
               </div>
+              
+              <input type="file" accept="image/*" hidden onChange={handleFileChange} />
+            </label>
+            
+            {image && (
+                <p className="text-[10px] text-center text-slate-400 dark:text-slate-500 truncate px-2">
+                    Current: {image.name}
+                </p>
             )}
           </div>
 
-
-
-          {/* History */}
-          <div className="bg-[#e2e3e4] rounded-[18px] p-4 ">
-            {history.length > 0 && (
-              <div>
-                <h3 className="font-medium mb-2 text-gray-800">Recent Extractions</h3>
-                <div className="space-y-4 max-h-80 overflow-y-auto custom-scroll">
-                  {history.map((item, index) => (
-                    <div
-                      key={index}
-                      className="p-2 bg-[#e2e3e4]  rounded-[8px] cursor-pointer hover:bg-gray-100 transition-colors border-gray-300 border border-[#efefef]"
-                      onClick={() => setText(item)}
-                    >
-                      <p className="text-[14px] text-gray-700">{item}</p>
+          {/* History Card */}
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 transition-colors">
+            <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
+              <History size={18} className="text-slate-400 dark:text-slate-500" />
+              History
+            </h3>
+            
+            <div className="space-y-3 max-h-[400px] overflow-y-auto custom-scroll pr-1">
+              {history.length > 0 ? (
+                history.map((item, index) => (
+                  <div
+                    key={index}
+                    onClick={() => setText(item)}
+                    className="p-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-xl cursor-pointer hover:border-blue-200 dark:hover:border-blue-500 hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm transition-all group"
+                  >
+                    <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-3 leading-relaxed">
+                      {item}
+                    </p>
+                    <div className="mt-2 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span className="text-[9px] font-bold text-blue-500 uppercase tracking-widest">Restore</span>
                     </div>
-                  ))}
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-10">
+                  <p className="text-xs text-slate-400 dark:text-slate-600">No recent extractions</p>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>

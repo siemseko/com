@@ -1,46 +1,51 @@
 'use client';
 
+import Image from 'next/image'; // Import Next.js Image component
 import { LoginInfo } from './Materials/LoginInfo';
 import { Profile } from './Materials/Profile';
 
 export default function Navbar() {
-
-  // Replace with your actual logo
   const Logo = () => (
-    <div className="flex items-center">
-      <img src="https://siemseko.github.io/ai/logo.png" width="70px" height="70px" alt="logo" />
-      <div>
-        <div className='text-[#000] text-[16px] bg-gradient-to-r from-[#002e75] to-[#076dfe] bg-clip-text text-transparent kantumruyPro'>ប្រព័ន្ធស្វ័យប្រវត្តិកម្មឌីជីថលកែសម្រួលរូបភាព-ជំនាន់ទី១</div>
-        <div className='text-[#9197A3] text-[16px] kantumruyPro'>Digital Automated Image Editing System</div>
+    <div className="flex items-center gap-3">
+      <div className="p-1.5 bg-white rounded-2xl shadow-sm border border-slate-100 relative w-[62px] h-[62px] flex items-center justify-center">
+        {/* Fixed: Replaced <img> with Next.js <Image /> */}
+        <Image 
+          src="https://siemseko.github.io/ai/logo.png" 
+          width={48} 
+          height={48} 
+          className="object-contain" 
+          alt="logo"
+          priority // Added priority to fix LCP warning
+        />
+      </div>
+      <div className="flex flex-col">
+        <h1 className='text-[15px] font-bold bg-gradient-to-r from-blue-900 via-blue-700 to-blue-500 bg-clip-text text-transparent kantumruyPro leading-tight'>
+          ប្រព័ន្ធស្វ័យប្រវត្តិកម្មឌីជីថលកែសម្រួលរូបភាព
+        </h1>
+        <p className='text-slate-400 text-[13px] font-medium tracking-tight'>
+          Digital Automated Image Editing System
+        </p>
       </div>
     </div>
   );
 
   return (
-    <nav className="px-4 py-3 flex items-center justify-between">
-      {/* Left side - Logo */}
+    <nav className="sticky top-0 z-40 w-full bg-white/80 backdrop-blur-xl border-b border-slate-100 px-6 py-3 flex items-center justify-between">
       <div className="flex items-center">
         <Logo />
       </div>
 
-      {/* Right side - Navigation items */}
-      <div className="flex items-center space-x-4">
-        <LoginInfo />
-        <div className=' hidden md:block  text-[14px] text-[#1A1C1E]'>Version: <span className='text-[#076eff]'> v1.9</span></div>
-        <Profile />
+      <div className="flex items-center gap-6">
+        <div className="hidden lg:flex items-center gap-2 px-3 py-1 bg-slate-50 border border-slate-100 rounded-full">
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span className='text-[12px] font-semibold text-slate-600'>v1.9 Stable</span>
+        </div>
+        
+        <div className="flex items-center gap-3 border-l border-slate-100 pl-6">
+          <LoginInfo />
+          <Profile />
+        </div>
       </div>
-
-      {/* Animation styles */}
-      <style jsx global>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(-5px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes fadeOut {
-          from { opacity: 1; transform: translateY(0); }
-          to { opacity: 0; transform: translateY(-5px); }
-        }
-      `}</style>
     </nav>
   );
 }
