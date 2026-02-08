@@ -110,7 +110,7 @@ const SidebarLayout = ({ children }: DashboardLayoutProps) => {
 
             <div className="flex items-center justify-between mt-6">
               <div className="flex items-center gap-x-2">
-                <Image className="w-8 h-8 rounded-full border dark:border-gray-700" src={'/images/profile/default.jpg'} alt="User" />
+                <Image className="w-8 h-8 rounded-full border dark:border-gray-700" src={process.env.NEXT_PUBLIC_API_URL + '/images/profile/default.jpg'} alt="User" />
                 <div className="flex flex-col">
                   <span className="text-sm font-semibold text-gray-700 dark:text-white">Alex Doe</span>
                   <span className="text-[10px] text-gray-500 uppercase">
