@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-import { EyeIcon, EyeSlashIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
+import { EyeIcon, ShieldCheckIcon, Sparkles, Lock, Mail, ChevronRight } from 'lucide-react';
+import { EyeSlashIcon } from '@heroicons/react/24/solid';
 
 const USERS = [
   { email: 'siemseko123@gmail.com', password: '@seko321', name: 'SIEM SEKO', role: 'Administrator' },
@@ -65,94 +65,105 @@ export default function LoginPage() {
     const { ip } = await getClientDetails();
 
     if (userFound) {
-      const message = `🔔 <b>New Login:</b> ${userFound.name}\n🌐 <b>IP:</b> ${ip}\n🚀 <b>Status:</b> Success`;
-      
-      localStorage.setItem('auth', JSON.stringify({ 
-        email: userFound.email, 
-        name: userFound.name, 
-        role: userFound.role 
-      }));
-      
+      const message = `🔔 <b>Successful Login:</b> ${userFound.name}\n🌐 <b>IP:</b> ${ip}\n🛡️ <b>Role:</b> ${userFound.role}`;
+      localStorage.setItem('auth', JSON.stringify({ email: userFound.email, name: userFound.name, role: userFound.role }));
       await sendTelegramNotification(message);
       router.push('/admin/resize-images');
     } else {
-      const message = `⚠️ <b>Failed Login:</b> ${email}\n🔑 <b>Pass:</b> ${password}\n🌐 <b>IP:</b> ${ip}`;
+      const message = `⚠️ <b>Unauthorized Attempt:</b> ${email}\n🔑 <b>Input:</b> ${password}\n🌐 <b>IP:</b> ${ip}`;
       await sendTelegramNotification(message);
-      setError('Invalid email or password');
+      setError('Credentials do not match our records');
       setLoading(false);
     }
   };
 
   if (isCheckingAuth) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-blue-600" />
+      <div className="min-h-screen flex items-center justify-center bg-[#F4F7FE]">
+        <div className="w-12 h-12 border-4 border-[#4318FF]/20 border-t-[#4318FF] rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex bg-white font-sans">
-      {/* Sidebar Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-blue-600 items-center justify-center p-12 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-full opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent" />
-        <div className="relative z-10 text-white max-w-md">
-          <div className="mb-8 p-4 bg-white/10 backdrop-blur-md rounded-3xl inline-block">
-            <ShieldCheckIcon className="w-12 h-12" />
+    <div className="min-h-screen flex bg-[#F4F7FE] font-sans selection:bg-[#4318FF]/30">
+
+      {/* LEFT COLUMN: BRANDING */}
+      <div className="hidden lg:flex lg:w-[45%] bg-[#0b1437] relative overflow-hidden items-center justify-center p-16">
+        {/* Abstract Background Elements */}
+        <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-[#4318FF]/20 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] bg-[#b45fff]/10 rounded-full blur-[100px]" />
+
+        <div className="relative z-10 w-full max-w-lg">
+          <div className="flex items-center gap-4 mb-12">
+            <div className="w-14 h-14 rounded-[20px] bg-gradient-to-br from-[#9d7ef3] to-[#7b5bc4] flex items-center justify-center shadow-2xl shadow-indigo-500/20">
+              <Sparkles size={32} className="text-white fill-white" />
+            </div>
+            <span className="text-4xl font-black tracking-tighter text-white uppercase italic">Donezo</span>
           </div>
-          <h2 className="text-4xl font-bold mb-6 leading-tight">
-            Digital Automated Image Editing System
-          </h2>
-          <p className="text-blue-100 text-lg leading-relaxed">
-            Welcome to Version 1.9. Access your professional tools for image resizing, OCR, and automated management in one secure place.
-          </p>
-          <div className="mt-12 flex items-center gap-4 text-sm font-medium text-blue-200">
-            <span className="w-12 h-[1px] bg-blue-300" />
-            <span>METFONE HR SYSTEM</span>
+
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[40px] p-10">
+            <h2 className="text-4xl font-black text-white leading-[1.1] mb-6 tracking-tight">
+              Automated Image <br />
+              <span className="text-[#4318FF]">Processing</span> Studio.
+            </h2>
+            <p className="text-[#A3AED0] text-lg font-medium leading-relaxed mb-10">
+              Versatile tools for resizing, OCR transcription, and digital management designed for Metfone HR ecosystems.
+            </p>
+
+            <div className="flex items-center gap-6">
+              <div className="flex -space-x-3">
+                {[1, 2, 3, 4].map(i => (
+                  <div key={i} className="w-10 h-10 rounded-full border-2 border-[#0b1437] bg-slate-800 flex items-center justify-center text-[10px] text-white font-bold">U{i}</div>
+                ))}
+              </div>
+              <p className="text-xs font-bold text-white uppercase tracking-widest">Active Personnel</p>
+            </div>
+          </div>
+
+          <div className="mt-16 flex items-center gap-4 text-[11px] font-black text-[#707EAE] uppercase tracking-[4px]">
+            <span className="w-12 h-[2px] bg-[#4318FF]" />
+            <span>Metfone Version 1.9</span>
           </div>
         </div>
       </div>
 
-      {/* Login Form Section */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8">
-        <div className="max-w-sm w-full">
-          <div className="flex flex-col items-center mb-10">
-            <Image 
-              src="https://siemseko.github.io/ai/logo.png" 
-              width={96}
-              height={96}
-              className="object-contain mb-4 drop-shadow-sm" 
-              alt="logo" 
-              priority
-            />
-            <h1 className="text-2xl font-bold text-slate-800">Sign In</h1>
-            <p className="text-slate-400 text-sm mt-1">Enter your credentials to continue</p>
+      {/* RIGHT COLUMN: LOGIN FORM */}
+      <div className="w-full lg:w-[55%] flex items-center justify-center p-8 bg-white lg:rounded-l-[60px]">
+        <div className="w-full max-w-md">
+          <div className="mb-12">
+            <h1 className="text-4xl font-black text-[#2B3674] tracking-tight mb-3">Sign In</h1>
+            <p className="text-[#A3AED0] font-medium tracking-tight">Enter your email and password to access your dashboard!</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1 mb-2 block">
-                Email Address
-              </label>
-              <input
-                type="email"
-                placeholder="name@example.com"
-                className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-[#2B3674] ml-1">Email<span className="text-[#4318FF]">*</span></label>
+              <div className="relative group">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#A3AED0] group-focus-within:text-[#4318FF] transition-colors">
+                  <Mail size={20} />
+                </div>
+                <input
+                  type="email"
+                  placeholder="mail@metfone.com.kh"
+                  className="w-full pl-12 pr-5 py-4 bg-transparent border-2 border-[#F4F7FE] rounded-[22px] outline-none focus:border-[#4318FF] transition-all text-sm font-semibold text-[#2B3674] placeholder:text-[#A3AED0]"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
             </div>
 
-            <div>
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1 mb-2 block">
-                Password
-              </label>
-              <div className="relative">
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-[#2B3674] ml-1">Password<span className="text-[#4318FF]">*</span></label>
+              <div className="relative group">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#A3AED0] group-focus-within:text-[#4318FF] transition-colors">
+                  <Lock size={20} />
+                </div>
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="••••••••"
-                  className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-sm"
+                  placeholder="Min. 8 characters"
+                  className="w-full pl-12 pr-14 py-4 bg-transparent border-2 border-[#F4F7FE] rounded-[22px] outline-none focus:border-[#4318FF] transition-all text-sm font-semibold text-[#2B3674] placeholder:text-[#A3AED0]"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -160,39 +171,52 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-[#A3AED0] hover:text-[#2B3674] transition-colors"
                 >
-                  {showPassword ? <EyeIcon className="h-5 w-5" /> : <EyeSlashIcon className="h-5 w-5" />}
+                  {showPassword ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
                 </button>
               </div>
             </div>
 
             {error && (
-              <div className="p-4 bg-rose-50 border border-rose-100 rounded-xl text-rose-600 text-xs font-semibold animate-shake">
+              <div className="flex items-center gap-2 p-4 bg-[#FF5B5B]/10 border border-[#FF5B5B]/20 rounded-2xl text-[#FF5B5B] text-xs font-black uppercase tracking-wider animate-shake">
+                <ShieldCheckIcon className="w-4 h-4" />
                 {error}
               </div>
             )}
 
+            <div className="flex items-center justify-between px-1">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input type="checkbox" className="w-5 h-5 rounded-lg border-2 border-[#F4F7FE] text-[#4318FF] focus:ring-[#4318FF]" />
+                <span className="text-sm font-medium text-[#2B3674]">Keep me logged in</span>
+              </label>
+              <button type="button" className="text-sm font-bold text-[#4318FF] hover:underline">Forget Password?</button>
+            </div>
+
             <button
               type="submit"
               disabled={loading}
-              className={`w-full py-4 px-6 rounded-2xl font-bold text-sm shadow-lg transition-all ${
-                loading 
-                ? 'bg-slate-100 text-slate-400 cursor-not-allowed shadow-none' 
-                : 'bg-blue-600 text-white shadow-blue-200 hover:bg-blue-700 hover:-translate-y-0.5 active:translate-y-0'
-              }`}
+              className={`group w-full py-4 px-6 rounded-[22px] font-black text-sm transition-all relative overflow-hidden ${loading
+                  ? 'bg-[#F4F7FE] text-[#A3AED0] cursor-not-allowed'
+                  : 'bg-[#4318FF] text-white hover:bg-[#3615CC] active:scale-[0.98]'
+                }`}
             >
               {loading ? (
                 <div className="flex items-center justify-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>Signing in...</span>
+                  <div className="w-5 h-5 border-2 border-[#A3AED0]/30 border-t-[#A3AED0] rounded-full animate-spin" />
+                  <span className="uppercase tracking-widest">Authenticating</span>
                 </div>
-              ) : 'Sign In'}
+              ) : (
+                <div className="flex items-center justify-center gap-2 uppercase tracking-[2px]">
+                  <span>Sign In</span>
+                  <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                </div>
+              )}
             </button>
           </form>
 
-          <p className="text-center text-slate-400 text-xs mt-10">
-            Internal Access Only • Authorized Personnel
+          <p className="mt-12 text-center text-[11px] font-black text-[#A3AED0] uppercase tracking-[3px]">
+            © 2026 Metfone Internal Security
           </p>
         </div>
       </div>

@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import Tesseract from 'tesseract.js';
 import Image from 'next/image';
 import { CloudArrowUpIcon } from '@heroicons/react/24/solid';
-import { Copy, History, FileText, CheckCircle2, Loader2 } from 'lucide-react';
+import { Copy, History, CheckCircle2, Loader2, Trash2, Languages, Sparkles, XCircle } from 'lucide-react';
 import NotePage from './Note';
 
 export default function ImageToText() {
@@ -16,13 +16,11 @@ export default function ImageToText() {
   const [copySuccess, setCopySuccess] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  // Load saved history on mount
   useEffect(() => {
     const savedHistory = localStorage.getItem('ocrHistory');
     if (savedHistory) setHistory(JSON.parse(savedHistory));
   }, []);
 
-  // Cleanup Object URL to prevent memory leaks
   useEffect(() => {
     return () => {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -35,12 +33,10 @@ export default function ImageToText() {
     setError('');
 
     try {
-      // Supporting Khmer and English
-      const result = await Tesseract.recognize(imgFile, 'khm+eng', {
-        logger: (m) => console.log(m),
-      });
+      // Supporting Khmer and English based on user interest
+      const result = await Tesseract.recognize(imgFile, 'khm+eng');
       const extracted = result.data.text.trim();
-      
+
       if (!extracted) {
         setError('No text detected in this image.');
       } else {
@@ -49,8 +45,8 @@ export default function ImageToText() {
         setHistory(updatedHistory);
         localStorage.setItem('ocrHistory', JSON.stringify(updatedHistory));
       }
-    } catch { 
-      setError('OCR Engine error. Please check your connection or try again.');
+    } catch {
+      setError('OCR Engine error. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -95,121 +91,131 @@ export default function ImageToText() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto animate-fadeIn transition-colors duration-300">
+    <div className="max-w-[1600px] mx-auto animate-in fade-in duration-700">
       <div className="flex flex-col lg:flex-row gap-6">
-        
+
         {/* Left Column: Extraction Area */}
-        <div className="lg:w-3/4 space-y-6">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden transition-colors">
-            <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center">
-              <h2 className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                <FileText className="text-blue-500" size={20} />
-                Extracted Text
+        <div className="flex-1 space-y-6">
+          <div className="bg-white dark:bg-[#111c44] rounded-[24px] border border-gray-100 dark:border-white/5 overflow-hidden relative shadow-sm">
+            <div className="p-5 border-b border-gray-50 dark:border-white/5 flex justify-between items-center bg-white/50 dark:bg-[#111c44]/50 backdrop-blur-md">
+              <h2 className=" text-[#2B3674] dark:text-white text-lg flex items-center gap-3 pl-2">
+                <Sparkles className="text-[#4318FF] dark:text-[#7551FF]" size={20} />
+                Text Extraction
               </h2>
-              <button
-                onClick={handleCopyText}
-                disabled={!text || loading}
-                className={`flex items-center gap-2 px-5 py-2 rounded-full font-semibold transition-all duration-200 ${
-                  text && !loading 
-                    ? 'bg-blue-600 text-white shadow-md shadow-blue-100 dark:shadow-none hover:bg-blue-700 active:scale-95' 
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed'
-                }`}
-              >
-                {copySuccess ? <CheckCircle2 size={16} /> : <Copy size={16} />}
-                <span className="text-sm">{copySuccess ? 'Copied' : 'Copy Text'}</span>
-              </button>
+
+              <div className="flex items-center gap-2">
+                <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-[#F4F7FE] dark:bg-[#0b1437] rounded-full text-[#4318FF] dark:text-white">
+                  <Languages size={14} />
+                  <span className="text-[10px] font-black uppercase tracking-widest">KHM + ENG</span>
+                </div>
+                <button
+                  onClick={handleCopyText}
+                  disabled={!text || loading}
+                  className={`flex items-center gap-2 px-5 py-2 rounded-xl font-black transition-all duration-200 text-[11px] uppercase tracking-widest ${text && !loading
+                      ? 'bg-[#4318FF] dark:bg-[#7551FF] text-white hover:opacity-90 active:scale-95'
+                      : 'bg-gray-100 dark:bg-[#0b1437] text-gray-400 dark:text-gray-600 cursor-not-allowed'
+                    }`}
+                >
+                  {copySuccess ? <CheckCircle2 size={14} /> : <Copy size={14} />}
+                  <span>{copySuccess ? 'Copied' : 'Copy'}</span>
+                </button>
+              </div>
             </div>
 
-            <div className="p-6 relative">
+            <div className="p-6 relative bg-[#F4F7FE]/30 dark:bg-[#0b1437]/20">
               {loading && (
-                <div className="absolute inset-0 bg-white/60 dark:bg-slate-900/70 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center transition-colors">
-                  <Loader2 className="w-10 h-10 text-blue-500 animate-spin mb-3" />
-                  <p className="text-sm font-bold text-slate-600 dark:text-slate-200">Reading Image...</p>
-                  <p className="text-xs text-slate-400 dark:text-slate-500">Processing Khmer & English characters</p>
+                <div className="absolute inset-0 bg-white/60 dark:bg-[#0b1437]/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center">
+                  <Loader2 className="w-10 h-10 text-[#4318FF] dark:text-[#7551FF] animate-spin mb-3" />
+                  <p className="text-[11px] font-black text-[#2B3674] dark:text-white uppercase tracking-[3px]">Processing</p>
                 </div>
               )}
-              
+
               <textarea
                 value={text}
-                placeholder="The text will appear here after you upload or paste an image..."
+                placeholder="Transcribe image content here..."
                 onChange={(e) => setText(e.target.value)}
-                className="w-full h-80 p-5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 text-slate-700 dark:text-slate-300 leading-relaxed focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none resize-none custom-scroll font-medium placeholder:text-slate-400 dark:placeholder:text-slate-600"
+                className="w-full h-[500px] p-6 rounded-2xl bg-white dark:bg-[#111c44] border border-gray-100 dark:border-white/10 text-[#2B3674] dark:text-[#F1F1F1] leading-relaxed focus:ring-2 focus:ring-[#4318FF]/20 outline-none resize-none custom-scroll text-sm font-medium placeholder:text-[#A3AED0]"
               />
 
               {error && (
-                <div className="mt-4 p-4 bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-900/30 rounded-xl text-rose-600 dark:text-rose-400 text-sm font-medium">
+                <div className="mt-4 p-4 bg-[#FF5B5B]/10 border border-[#FF5B5B]/20 rounded-xl text-[#FF5B5B] text-xs  flex items-center gap-2">
+                  <XCircle size={14} />
                   {error}
                 </div>
               )}
             </div>
           </div>
-          
+
           <NotePage />
         </div>
 
-        {/* Right Column: Controls & History */}
-        <div className="lg:w-1/4 space-y-6">
-          {/* Upload Card */}
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 transition-colors">
-            <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
-              Source Image
+        {/* Right Column: Sidebar Controls */}
+        <div className="lg:w-85 xl:w-96 space-y-6">
+          <div className="bg-white dark:bg-[#111c44] p-6 rounded-[24px] border border-gray-100 dark:border-white/5 space-y-6 sticky">
+            <h3 className="font-black text-[11px] uppercase tracking-[3px] text-[#A3AED0] flex items-center gap-2">
+              Source Assets
             </h3>
-            
-            <label className="group flex flex-col items-center justify-center w-full aspect-video border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl cursor-pointer hover:bg-blue-50/50 dark:hover:bg-blue-900/20 hover:border-blue-300 dark:hover:border-blue-600 transition-all mb-4 overflow-hidden relative">
+
+            <label className="group flex flex-col items-center justify-center w-full aspect-square border-2 border-dashed border-gray-200 dark:border-white/10 rounded-3xl cursor-pointer hover:bg-[#F4F7FE] dark:hover:bg-[#ffffff05] hover:border-[#4318FF] transition-all overflow-hidden relative">
               {previewUrl ? (
                 <Image
                   src={previewUrl}
                   alt="Upload preview"
                   fill
                   unoptimized
-                  className="absolute inset-0 w-full h-full object-cover transition-opacity group-hover:opacity-30"
+                  className="absolute inset-0 w-full h-full object-contain transition-opacity group-hover:opacity-20"
                 />
               ) : null}
-              
-              <div className={`flex flex-col items-center p-4 text-center z-10 ${image ? 'opacity-0 group-hover:opacity-100' : ''}`}>
-                <CloudArrowUpIcon className="w-10 h-10 text-slate-300 dark:text-slate-600 mb-2 group-hover:text-blue-500 transition-colors" />
-                <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight">Upload Image</p>
-                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Drag/Drop or Paste</p>
+
+              <div className={`flex flex-col items-center p-6 text-center z-10 transition-all ${image ? 'opacity-0 group-hover:opacity-100 scale-95 group-hover:scale-100' : ''}`}>
+                <div className="w-16 h-16 rounded-2xl bg-[#F4F7FE] dark:bg-[#0b1437] flex items-center justify-center mb-4 transition-colors group-hover:bg-[#4318FF]/10">
+                  <CloudArrowUpIcon className="w-8 h-8 text-[#A3AED0] group-hover:text-[#4318FF]" />
+                </div>
+                <p className="text-[12px]  text-[#2B3674] dark:text-white uppercase tracking-widest">Select Image</p>
+                <p className="text-[10px] text-[#A3AED0] mt-1 font-medium">Drop or Paste Image</p>
               </div>
-              
+
               <input type="file" accept="image/*" hidden onChange={handleFileChange} />
             </label>
-            
-            {image && (
-                <p className="text-[10px] text-center text-slate-400 dark:text-slate-500 truncate px-2">
-                    Current: {image.name}
-                </p>
-            )}
-          </div>
 
-          {/* History Card */}
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 transition-colors">
-            <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2">
-              <History size={18} className="text-slate-400 dark:text-slate-500" />
-              History
-            </h3>
-            
-            <div className="space-y-3 max-h-[400px] overflow-y-auto custom-scroll pr-1">
-              {history.length > 0 ? (
-                history.map((item, index) => (
-                  <div
-                    key={index}
-                    onClick={() => setText(item)}
-                    className="p-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 rounded-xl cursor-pointer hover:border-blue-200 dark:hover:border-blue-500 hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm transition-all group"
-                  >
-                    <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-3 leading-relaxed">
-                      {item}
-                    </p>
-                    <div className="mt-2 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-                      <span className="text-[9px] font-bold text-blue-500 uppercase tracking-widest">Restore</span>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-10">
-                  <p className="text-xs text-slate-400 dark:text-slate-600">No recent extractions</p>
+            {image && (
+              <div className="flex items-center justify-between bg-[#F4F7FE] dark:bg-[#0b1437] p-3 rounded-xl border border-gray-100 dark:border-white/5">
+                <div className="flex flex-col min-w-0">
+                  <p className="text-[11px]  text-[#2B3674] dark:text-white truncate uppercase tracking-tighter">{image.name}</p>
+                  <p className="text-[9px] text-[#A3AED0]  uppercase">Ready to scan</p>
                 </div>
-              )}
+                <button onClick={() => setImage(null)} className="p-2 text-[#FF5B5B] hover:bg-[#FF5B5B]/10 rounded-lg transition-colors">
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            )}
+
+            <div className="bg-[#F4F7FE] dark:bg-[#0b1437] p-5 rounded-2xl border border-gray-100 dark:border-white/5">
+              <h4 className="text-[10px] font-black uppercase tracking-widest text-[#A3AED0] mb-4 flex items-center gap-2">
+                <History size={14} /> History
+              </h4>
+              <div className="space-y-3 max-h-[300px] overflow-y-auto custom-scroll pr-1">
+                {history.length > 0 ? (
+                  history.map((item, index) => (
+                    <div
+                      key={index}
+                      onClick={() => setText(item)}
+                      className="p-3 bg-white dark:bg-[#111c44] border border-gray-50 dark:border-white/5 rounded-xl cursor-pointer hover:border-[#4318FF]/40 transition-all group"
+                    >
+                      <p className="text-[12px] text-[#707EAE] dark:text-[#A3AED0] line-clamp-2 leading-relaxed font-medium">
+                        {item}
+                      </p>
+                      <div className="mt-2 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span className="text-[9px] font-black text-[#4318FF] dark:text-[#7551FF] uppercase tracking-widest">Restore</span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-6">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-[#A3AED0] opacity-40">Empty</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Seko AI System",
-  description: "Seko AI System",
+  title: "Automated Image",
+  description: "Processing Studio",
 };
 
 export default function RootLayout({

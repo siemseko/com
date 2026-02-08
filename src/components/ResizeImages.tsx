@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { CloudArrowUpIcon } from '@heroicons/react/24/solid';
-import { ArrowDownToLine, Plus, XCircle, FolderOpen, Settings2 } from 'lucide-react';
+import { ArrowDownToLine, XCircle, FolderOpen, Settings2, Trash2, Layers } from 'lucide-react';
 import NotePage from './Note';
 
 // TypeScript interfaces for the File System Access API
@@ -24,10 +24,11 @@ interface FileSystemWritableFileStream {
 }
 
 function Toast({ message, type, onClose }: { message: string; type: 'success' | 'error' | 'info'; onClose: () => void }) {
-    const bgColor = type === 'success' ? 'bg-emerald-500' : type === 'error' ? 'bg-rose-500' : 'bg-blue-600';
+    // Donezo-inspired accent colors
+    const bgColor = type === 'success' ? 'bg-[#05CD99]' : type === 'error' ? 'bg-[#FF5B5B]' : 'bg-[#4318FF]';
     return (
-        <div className={`fixed bottom-6 right-6 ${bgColor} text-white px-6 py-3 rounded-2xl shadow-2xl animate-fade-in-up z-50 flex items-center gap-3 backdrop-blur-md`}>
-            <span className="text-sm font-medium">{message}</span>
+        <div className={`fixed bottom-6 right-6 ${bgColor} text-white px-6 py-3 rounded-2xl animate-fade-in-up z-[100] flex items-center gap-3 border border-white/10 shadow-lg`}>
+            <span className="text-sm  tracking-tight">{message}</span>
             <button onClick={onClose} className="hover:rotate-90 transition-transform">
                 <XCircle size={18} />
             </button>
@@ -42,7 +43,6 @@ export default function ResizeImages() {
     const [resizeMode, setResizeMode] = useState<'fill' | 'cover'>('cover');
     const [targetSize, setTargetSize] = useState<'1280x720' | '1920x1080'>('1920x1080');
     const [useFolderPicker, setUseFolderPicker] = useState(true);
-
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info'; id: number } | null>(null);
     const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -83,29 +83,23 @@ export default function ResizeImages() {
 
     const handleResizeAndDownload = async () => {
         if (files.length === 0) return showToast('No images to process.', 'info');
-
         setLoading(true);
         setProgress(0);
-
         let directoryHandle: FileSystemDirectoryHandle | null = null;
-
         if (useFolderPicker && 'showDirectoryPicker' in window) {
             try {
                 const picker = (window as unknown as { showDirectoryPicker: () => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker;
                 directoryHandle = await picker();
             } catch {
-                showToast('Folder selection cancelled. Using default download.', 'info');
+                showToast('Folder selection cancelled.', 'info');
             }
         }
-
         const dateStr = new Date().toISOString().replace(/T/, '_').replace(/\..+/, '').replace(/:/g, '-');
-
         for (let i = 0; i < files.length; i++) {
             try {
                 const file = files[i];
                 const resizedBlob = await resizeImage(file, resizeMode, targetSize);
                 const filename = `${file.name.replace(/\.[^/.]+$/, '')}_${dateStr}.jpg`;
-
                 if (directoryHandle) {
                     const fileHandle = await directoryHandle.getFileHandle(filename, { create: true });
                     const writable = await fileHandle.createWritable();
@@ -125,7 +119,6 @@ export default function ResizeImages() {
                 showToast(`Error processing ${files[i].name}`, 'error');
             }
         }
-
         setLoading(false);
         showToast('Processing complete!', 'success');
     };
@@ -140,7 +133,6 @@ export default function ResizeImages() {
                 canvas.height = th;
                 const ctx = canvas.getContext('2d');
                 if (!ctx) return reject('No context');
-
                 if (mode === 'fill') {
                     ctx.drawImage(img, 0, 0, tw, th);
                 } else {
@@ -155,45 +147,54 @@ export default function ResizeImages() {
     };
 
     return (
-        <div className="min-h-screen bg-[#F8FAFC] dark:bg-gray-950  font-sans text-slate-900 dark:text-gray-100 transition-colors duration-300">
+        <div className="max-w-[1600px] mx-auto animate-in fade-in duration-700">
             <style>{`
                 .custom-scroll::-webkit-scrollbar { width: 6px; }
                 .custom-scroll::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
-                .dark .custom-scroll::-webkit-scrollbar-thumb { background: #334155; }
-                @keyframes fadeInFromBottom { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-                .animate-fade-in-up { animation: fadeInFromBottom 0.3s ease-out forwards; }
-            `}</style>
-
-            <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-8">
+                .dark .custom-scroll::-webkit-scrollbar-thumb { background: #1b254b; }
+            `}</style> 
+            <div className="flex flex-col xl:flex-row gap-6">
+                {/* PREVIEW QUEUE */}
                 <div className="flex-1 space-y-6"> 
-                    <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-sm border border-slate-100 dark:border-gray-800 overflow-hidden transition-colors">
-                        <div className="p-6 border-b border-slate-50 dark:border-gray-800 flex items-center justify-between">
-                            <h2 className="font-semibold flex items-center gap-2 dark:text-gray-100">
-                                <Plus size={20} className="text-blue-500" /> Preview Stack
+                    <div className="bg-white dark:bg-[#111c44] rounded-[24px] border border-gray-100 dark:border-white/5 overflow-hidden transition-all">
+                        <div className="p-6 border-b border-gray-50 dark:border-white/5 flex items-center justify-between relative bg-white/50 dark:bg-[#111c44]/50 backdrop-blur-md">
+                           
+                            
+                            <h2 className=" text-lg text-[#2B3674] dark:text-white flex items-center gap-3 pl-2">
+                                <Layers size={20} className="text-[#4318FF]" /> Image Queue
                             </h2>
+                            <div className="px-4 py-1 bg-[#F4F7FE] dark:bg-[#0b1437] rounded-full border border-[#4318FF]/10">
+                                <span className="text-[10px] font-black text-[#4318FF] dark:text-white tracking-widest uppercase">
+                                    {files.length} Assets
+                                </span>
+                            </div>
                         </div>
-                        <div className="p-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[500px] overflow-y-auto custom-scroll">
+                        
+                        <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-h-[600px] overflow-y-auto custom-scroll bg-[#F4F7FE]/30 dark:bg-[#0b1437]/20">
                             {files.length === 0 ? (
-                                <div className="col-span-full py-20 flex flex-col items-center text-slate-400 dark:text-gray-600">
-                                    <CloudArrowUpIcon className="w-12 h-12 mb-2 opacity-20" />
-                                    <p>Drop images here or paste from clipboard</p>
+                                <div className="col-span-full py-32 flex flex-col items-center text-[#A3AED0]">
+                                    <div className="w-20 h-20 rounded-3xl bg-white dark:bg-[#111c44] flex items-center justify-center border border-gray-100 dark:border-white/5 mb-4">
+                                        <CloudArrowUpIcon className="w-10 h-10 opacity-20 text-[#4318FF]" />
+                                    </div>
+                                    <p className="text-sm  uppercase tracking-widest">Awaiting Assets</p>
+                                    <p className="text-xs opacity-60 mt-1 italic font-medium">Paste from clipboard or drag files here</p>
                                 </div>
                             ) : (
                                 files.map((file, idx) => (
-                                    <div key={idx} className="group relative aspect-video bg-slate-50 dark:bg-gray-800 rounded-2xl overflow-hidden border border-slate-100 dark:border-gray-700 transition-colors">
+                                    <div key={idx} className="group relative aspect-video bg-white dark:bg-[#111c44] rounded-2xl overflow-hidden border border-gray-100 dark:border-white/10 transition-all hover:border-[#4318FF]/40 shadow-sm hover:shadow-md">
                                         <Image
                                             src={URL.createObjectURL(file)}
                                             fill
                                             unoptimized
-                                            className={`${resizeMode === 'cover' ? 'object-cover' : 'object-contain'}`}
+                                            className={`${resizeMode === 'cover' ? 'object-cover' : 'object-contain'} p-1`}
                                             alt="preview"
                                         />
-                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
+                                        <div className="absolute inset-0 bg-[#2B3674]/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
                                             <button
                                                 onClick={() => setFiles(prev => prev.filter((_, i) => i !== idx))}
-                                                className="bg-white/20 hover:bg-rose-500 p-2 rounded-full text-white transition-colors relative z-10"
+                                                className="bg-[#FF5B5B] hover:bg-[#ee4b4b] p-2.5 rounded-xl text-white transition-all transform hover:scale-110 active:scale-90 shadow-lg"
                                             >
-                                                <XCircle size={20} />
+                                                <Trash2 size={18} />
                                             </button>
                                         </div>
                                     </div>
@@ -204,78 +205,74 @@ export default function ResizeImages() {
                     <NotePage />
                 </div>
 
-                <div className="lg:w-80 space-y-6">
-                    <div className="bg-white dark:bg-gray-900 p-6 rounded-3xl shadow-sm border border-slate-100 dark:border-gray-800 space-y-6 transition-colors">
-                        <h3 className="font-bold flex items-center gap-2 dark:text-gray-50"><Settings2 size={18} /> Configuration</h3>
+                {/* PARAMETERS SIDEBAR */}
+                <div className="xl:w-80 space-y-6">
+                    <div className="bg-white dark:bg-[#111c44] p-6 rounded-[24px] border border-gray-100 dark:border-white/5 space-y-6 sticky">
+                        <h3 className="font-black text-[11px] uppercase tracking-[3px] flex items-center gap-2 text-[#A3AED0]">
+                            <Settings2 size={16} /> Parameters
+                        </h3>
 
-                        <label className="group block border-2 border-dashed border-slate-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 rounded-2xl p-6 transition-all cursor-pointer text-center">
-                            <CloudArrowUpIcon className="w-8 h-8 mx-auto text-slate-300 dark:text-gray-600 group-hover:text-blue-500 mb-2 transition-colors" />
-                            <span className="text-xs font-semibold text-slate-500 dark:text-gray-400 uppercase tracking-wider">Upload Files</span>
+                        <label className="group block border-2 border-dashed border-gray-200 dark:border-white/10 hover:border-[#4318FF] dark:hover:border-[#7551FF] hover:bg-[#F4F7FE] dark:hover:bg-[#ffffff05] rounded-3xl p-10 transition-all cursor-pointer text-center relative overflow-hidden">
+                            <CloudArrowUpIcon className="w-12 h-12 mx-auto text-[#A3AED0] group-hover:text-[#4318FF] mb-3 transition-colors" />
+                            <span className="text-[12px]  text-[#2B3674] dark:text-white uppercase tracking-widest">Browse Files</span>
                             <input type="file" multiple accept="image/*" className="hidden" onChange={handleFileChange} />
                         </label>
 
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-gray-800/50 rounded-xl">
-                                <span className="text-sm font-medium text-slate-700 dark:text-gray-300">Resize Mode</span>
+                        <div className="space-y-2">
+                            {/* Resize Mode Row */}
+                            <div className="flex items-center justify-between p-4 bg-[#F4F7FE] dark:bg-[#0b1437] rounded-2xl border border-transparent dark:border-white/5">
+                                <span className="text-xs  text-[#A3AED0] uppercase tracking-wider">Crop</span>
                                 <button
                                     onClick={() => setResizeMode(m => m === 'fill' ? 'cover' : 'fill')}
-                                    className="text-xs font-bold px-3 py-1 bg-white dark:bg-gray-700 border border-slate-200 dark:border-gray-600 rounded-lg shadow-sm text-blue-600 dark:text-blue-400 uppercase transition-colors"
+                                    className="text-[10px] font-black px-4 py-1.5 bg-white dark:bg-[#1b254b] text-[#4318FF] dark:text-white rounded-xl shadow-sm hover:bg-[#4318FF] hover:text-white transition-all uppercase tracking-tighter"
                                 >
                                     {resizeMode}
                                 </button>
                             </div>
 
-                            <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-gray-800/50 rounded-xl">
-                                <span className="text-sm font-medium text-slate-700 dark:text-gray-300">Resolution</span>
+                            {/* Quality/Size Row */}
+                            <div className="flex items-center justify-between p-4 bg-[#F4F7FE] dark:bg-[#0b1437] rounded-2xl border border-transparent dark:border-white/5">
+                                <span className="text-xs  text-[#A3AED0] uppercase tracking-wider">Target</span>
                                 <button
                                     onClick={() => setTargetSize(s => s === '1280x720' ? '1920x1080' : '1280x720')}
-                                    className="text-xs font-bold px-3 py-1 bg-white dark:bg-gray-700 border border-slate-200 dark:border-gray-600 rounded-lg shadow-sm text-blue-600 dark:text-blue-400 transition-colors"
+                                    className="text-[10px] font-black px-4 py-1.5 bg-white dark:bg-[#1b254b] text-[#4318FF] dark:text-white rounded-xl shadow-sm hover:bg-[#4318FF] hover:text-white transition-all uppercase tracking-tighter"
                                 >
                                     {targetSize === '1280x720' ? '720p' : '1080p'}
                                 </button>
                             </div>
 
-                            <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-gray-800/50 rounded-xl">
-                                <span className="text-sm font-medium text-slate-700 dark:text-gray-300">Images Loaded</span>
-                                <button
-                                    onClick={() => setTargetSize(s => s === '1280x720' ? '1920x1080' : '1280x720')}
-                                    className="text-xs font-bold px-3 py-1 bg-white dark:bg-gray-700 border border-slate-200 dark:border-gray-600 rounded-lg shadow-sm text-blue-600 dark:text-blue-400 transition-colors"
-                                >
-                                     {files.length}
-                                </button>
-                            </div>
-
-                            <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-gray-800/50 rounded-xl">
-                                <div className="flex items-center gap-2">
-                                    <FolderOpen size={16} className="text-slate-400 dark:text-gray-500" />
-                                    <span className="text-sm font-medium text-slate-700 dark:text-gray-300">Select Folder</span>
+                            {/* Direct Save Checkbox Row */}
+                            <div className="flex items-center justify-between p-4 bg-[#F4F7FE] dark:bg-[#0b1437] rounded-2xl border border-transparent dark:border-white/5">
+                                <div className="flex items-center gap-3">
+                                    <FolderOpen size={16} className="text-[#A3AED0]" />
+                                    <span className="text-[13px]  text-[#2B3674] dark:text-white">Direct Save</span>
                                 </div>
                                 <input
                                     type="checkbox"
                                     checked={useFolderPicker}
                                     onChange={(e) => setUseFolderPicker(e.target.checked)}
-                                    className="w-4 h-4 rounded border-slate-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 bg-white dark:bg-gray-700"
+                                    className="w-5 h-5 rounded-lg border-gray-300 bg-white dark:bg-[#0b1437] text-[#4318FF] focus:ring-[#4318FF] transition-all cursor-pointer shadow-sm"
                                 />
                             </div>
                         </div>
 
-                        <div className="flex flex-col gap-3">
+                        <div className="flex flex-col gap-3 pt-4">
                             <button
                                 onClick={handleResizeAndDownload}
                                 disabled={loading || files.length === 0}
-                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-200 dark:shadow-none transition-all flex items-center justify-center gap-2 disabled:bg-slate-200 dark:disabled:bg-gray-800 disabled:text-gray-400 dark:disabled:text-gray-600 disabled:shadow-none"
+                                className="w-full bg-[#4318FF] hover:bg-[#3915db] dark:bg-[#7551FF] dark:hover:bg-[#6039ff] text-white font-black py-4 rounded-2xl active:scale-95 transition-all flex items-center justify-center gap-3 disabled:bg-[#CBD5E1] dark:disabled:bg-[#1b254b] disabled:text-white uppercase tracking-[2px] text-[12px]"
                             >
                                 {loading ? (
                                     <span className="animate-pulse">Processing {progress}%</span>
                                 ) : (
-                                    <><ArrowDownToLine size={20} /> Process & Save</>
+                                    <><ArrowDownToLine size={20} /> Process Batch</>
                                 )}
                             </button>
                             <button
                                 onClick={() => setFiles([])}
-                                className="w-full py-3 text-slate-400 dark:text-gray-500 hover:text-rose-500 dark:hover:text-rose-400 text-sm font-medium transition-colors"
+                                className="group flex items-center justify-center gap-2 w-full py-2 text-[#A3AED0] hover:text-[#FF5B5B] text-[10px] font-black uppercase tracking-[2px] transition-colors"
                             >
-                                Clear all images
+                                <Trash2 size={12} className="group-hover:animate-bounce" /> Clear All
                             </button>
                         </div>
                     </div>
