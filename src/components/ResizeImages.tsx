@@ -42,7 +42,7 @@ export default function ResizeImages() {
     const [loading, setLoading] = useState(false);
     const [resizeMode, setResizeMode] = useState<'fill' | 'cover'>('cover');
     const [targetSize, setTargetSize] = useState<'1280x720' | '1920x1080'>('1920x1080');
-    const [useFolderPicker, setUseFolderPicker] = useState(true);
+    const [useFolderPicker, setUseFolderPicker] = useState(false);
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info'; id: number } | null>(null);
     const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
